@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tic Tac Toe - PvP & AI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-top: 10px;
+      font-size: 3rem;
+      letter-spacing: 1.5px;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+    }
+
+    .mode-select {
+      margin: 20px 0;
+    }
+
+    .mode-select button {
+      background: transparent;
+      border: 2px solid white;
+      color: white;
+      font-size: 1.1rem;
+      padding: 10px 25px;
+      margin: 0 10px;
+      cursor: pointer;
+      border-radius: 30px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+
+    .mode-select button.active,
+    .mode-select button:hover {
+      background: white;
+      color: #764ba2;
+      box-shadow: 0 0 15px white;
+    }
+
+    .game-container {
+      display: grid;
+      grid-template-columns: repeat(3, 110px);
+      grid-gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .cell {
+      width: 110px;
+      height: 110px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 15px;
+      border: 3px solid white;
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+      transition: background 0.3s ease, color 0.3s ease;
+      position: relative;
+    }
+
+    .cell:hover:not(.win):not(.disabled) {
+      background: rgba(255,255,255,0.35);
+      color: #764ba2;
+    }
+
+    .cell.win {
+      background: #76c7c0;
+      color: #1b1b1b;
+      box-shadow: 0 0 20px #33a6a4;
+      cursor: default;
+    }
+
+    .cell.disabled {
+      pointer-events: none;
+      opacity: 0.8;
+      cursor: not-allowed;
+    }
+
+    .info {
+      text-align: center;
+      font-size: 1.5rem;
+      min-height: 2em;
+      margin-bottom: 20px;
+      text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    }
+
+.mode-select button {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  padding: 12px 30px;
+  margin: 0 12px;
+  cursor: pointer;
+  border-radius: 40px;
+  box-shadow: 0 4px 15px rgba(255, 126, 95, 0.6);
+  transition: all 0.4s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.mode-select button.active,
+.mode-select button:hover {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  box-shadow: 0 6px 20px rgba(38, 97, 223, 0.75);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+#reset {
+  background: linear-gradient(135deg, #43cea2, #185a9d);
+  color: white;
+  font-weight: 700;
+  border: none;
+  padding: 14px 36px;
+  font-size: 1.3rem;
+  border-radius: 40px;
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(66, 206, 162, 0.7);
+  transition: all 0.4s ease;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+#reset:hover {
+  background: linear-gradient(135deg, #1f4037, #99f2c8);
+  color: #0a3d2d;
+  box-shadow: 0 8px 25px rgba(31, 64, 55, 0.85);
+  transform: scale(1.1);
+}
+
+
+
+  </style>
+</head>
+<body>
+
+  <h1>Tic Tac Toe</h1>
+
+  <div class="mode-select">
+    <button id="pvp-btn" class="active">Player vs Player</button>
+    <button id="pvc-btn">Player vs AI</button>
+  </div>
+
+  <div class="game-container" role="grid" aria-label="Tic Tac Toe board">
+    <div class="cell" data-index="0" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="1" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="2" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="3" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="4" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="5" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="6" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="7" role="gridcell" tabindex="0"></div>
+    <div class="cell" data-index="8" role="gridcell" tabindex="0"></div>
+  </div>
+
+  <div class="info" id="status">Player X's Turn</div>
+  <button id="reset">Restart Game</button>
+
+  <script>
+    const cells = document.querySelectorAll('.cell');
+    const statusText = document.getElementById('status');
+    const resetBtn = document.getElementById('reset');
+    const pvpBtn = document.getElementById('pvp-btn');
+    const pvcBtn = document.getElementById('pvc-btn');
+
+    let currentPlayer = 'X';
+    let gameBoard = ["", "", "", "", "", "", "", "", ""];
+    let isGameActive = true;
+    let vsAI = false;
+
+    const winConditions = [
+      [0,1,2], [3,4,5], [6,7,8], 
+      [0,3,6], [1,4,7], [2,5,8], 
+      [0,4,8], [2,4,6]           
+    ];
+
+    pvpBtn.addEventListener('click', () => {
+      vsAI = false;
+      resetGame();
+      pvpBtn.classList.add('active');
+      pvcBtn.classList.remove('active');
+    });
+
+    pvcBtn.addEventListener('click', () => {
+      vsAI = true;
+      resetGame();
+      pvpBtn.classList.remove('active');
+      pvcBtn.classList.add('active');
+    });
+
+    function handleClick(e) {
+      const index = e.target.dataset.index;
+
+      if (gameBoard[index] !== "" || !isGameActive) return;
+
+      updateCell(e.target, index, currentPlayer);
+
+      if (checkWinner()) {
+        statusText.textContent = `🎉 Player ${currentPlayer} Wins!`;
+        endGame();
+        return;
+      }
+
+      if (gameBoard.every(cell => cell !== "")) {
+        statusText.textContent = "🤝 It's a Draw!";
+        endGame();
+        return;
+      }
+
+      switchPlayer();
+
+      if (vsAI && currentPlayer === 'O' && isGameActive) {
+        statusText.textContent = "AI is thinking...";
+        setTimeout(playAI, 700);
+      }
+    }
+
+    function updateCell(cellElement, index, player) {
+      gameBoard[index] = player;
+      cellElement.textContent = player;
+      cellElement.classList.add('disabled');
+    }
+
+    function checkWinner() {
+      return winConditions.some(combination => {
+        const [a, b, c] = combination;
+        if (
+          gameBoard[a] &&
+          gameBoard[a] === gameBoard[b] &&
+          gameBoard[a] === gameBoard[c]
+        ) {
+          highlightWinningCells([a, b, c]);
+          return true;
+        }
+        return false;
+      });
+    }
+
+    function highlightWinningCells(cellsIndices) {
+      cellsIndices.forEach(i => {
+        cells[i].classList.add('win');
+      });
+    }
+
+    function switchPlayer() {
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      statusText.textContent = `Player ${currentPlayer}'s Turn`;
+    }
+
+    function endGame() {
+      isGameActive = false;
+      cells.forEach(cell => cell.classList.add('disabled'));
+    }
+
+    function resetGame() {
+      gameBoard = ["", "", "", "", "", "", "", "", ""];
+      isGameActive = true;
+      currentPlayer = 'X';
+      statusText.textContent = `Player ${currentPlayer}'s Turn`;
+      cells.forEach(cell => {
+        cell.textContent = "";
+        cell.classList.remove('win', 'disabled');
+      });
+    }
+
+    function playAI() {
+      let emptyIndices = gameBoard
+        .map((val, idx) => val === "" ? idx : null)
+        .filter(idx => idx !== null);
+
+      if (emptyIndices.length === 0) return;
+
+      if (gameBoard[4] === "") {
+        makeAIMove(4);
+        return;
+      }
+
+      const aiMove = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      makeAIMove(aiMove);
+    }
+
+    function makeAIMove(index) {
+      updateCell(cells[index], index, currentPlayer);
+
+      if (checkWinner()) {
+        statusText.textContent = `🤖 AI Wins!`;
+        endGame();
+        return;
+      }
+
+      if (gameBoard.every(cell => cell !== "")) {
+        statusText.textContent = "🤝 It's a Draw!";
+        endGame();
+        return;
+      }
+
+      switchPlayer();
+    }
+
+    cells.forEach(cell => cell.addEventListener('click', handleClick));
+    resetBtn.addEventListener('click', resetGame);
+
+  </script>
+
+</body>
+</html>
